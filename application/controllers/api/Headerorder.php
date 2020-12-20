@@ -113,6 +113,26 @@ class Headerorder extends REST_Controller
         'status'    => true,
         'message'   => 'Sukses melakukan order'
       ], REST_Controller::HTTP_CREATED);
+                $this->load->library('email');
+                $this->email->from('troubleshootdotid@gmail.com', 'Troubleshoot.id');
+                $this->email->to('order.troubleshoot@gmail.com');
+                $subject = "Pesanan Baru [#" . $tracking_key . "]";
+                $this->email->subject($subject);
+                $getorder = $this->header_order->getHeaderByKey($tracking_key);
+                $laptop = $this->laptop->getMerk($getorder['merk_laptop']);
+                $message = "Nama : " . $getorder['nama'] . "\n"; //ambil nama
+                $message .= "No.Hp : " . $getorder['nomor_hp'] . "\n"; //ambil no hp
+                $message .= "Laptop : " . $laptop['merk'] . " " . $getorder['tipe_laptop'] . "\n";
+                $message .= "Kerusakan : \n"; 
+                $kerusakan = $this->order->getOrderByKey($getorder['tracking_key']);
+                foreach ($kerusakan as $index => $val) :
+                $kerusakan_list = $this->kerusakan->getKerusakan($val['kerusakan_id']);
+                $val['kerusakan_id'] = $kerusakan_list['nama_kerusakan']; $this->load->library('email');
+                $message .= " " . ($index + 1) . ". " . $val['kerusakan_id'] . " (Rp " . number_format($val['total_harga'], 2, ',', '.') . ")\n";
+                endforeach; //ambil kerusakan
+                $message .= "Total Harga: Rp " . number_format($getorder['biaya_total'], 2, ',', '.');  //ambil harga
+                $this->email->message($message);
+                $this->email->send();
     } else {
       $this->response([
         'status'  => false,
